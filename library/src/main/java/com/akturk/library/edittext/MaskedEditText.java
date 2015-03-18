@@ -19,6 +19,7 @@ public class MaskedEditText extends EditText implements TextWatcher {
     private String mask;
     private char maskFill;
     private char charRepresentation;
+    private char numberRepresentation;
     private int[] rawToMask;
     private RawText rawText;
     private boolean editingBefore;
@@ -49,12 +50,19 @@ public class MaskedEditText extends EditText implements TextWatcher {
         String maskFill = attributes.getString(R.styleable.MaskedEditText_mask_fill);
         this.maskFill = (maskFill != null && maskFill.length() > 0) ? maskFill.charAt(0) : ' ';
 
-        String representation = attributes.getString(R.styleable.MaskedEditText_char_representation);
+        String char_representation = attributes.getString(R.styleable.MaskedEditText_char_representation);
+        String number_representation = attributes.getString(R.styleable.MaskedEditText_number_representation);
 
-        if (representation == null) {
-            charRepresentation = '#';
+        if (char_representation == null) {
+            charRepresentation = 'A';
         } else {
-            charRepresentation = representation.charAt(0);
+            charRepresentation = char_representation.charAt(0);
+        }
+
+        if (number_representation == null) {
+            numberRepresentation = '9';
+        } else {
+            numberRepresentation = number_representation.charAt(0);
         }
 
         cleanUp();
@@ -101,6 +109,7 @@ public class MaskedEditText extends EditText implements TextWatcher {
             this.setText(null);
         } else {
             this.setText(mask.replace(charRepresentation, maskFill));
+            this.setText(mask.replace(numberRepresentation, maskFill));
         }
         editingBefore = false;
         editingOnChanged = false;
@@ -155,6 +164,11 @@ public class MaskedEditText extends EditText implements TextWatcher {
         cleanUp();
     }
 
+    public void setNumberRepresentation(char numberRepresentation) {
+        this.numberRepresentation = numberRepresentation;
+        cleanUp();
+    }
+
     public char getCharRepresentation() {
         return this.charRepresentation;
     }
@@ -167,7 +181,7 @@ public class MaskedEditText extends EditText implements TextWatcher {
         int charIndex = 0;
         for (int i = 0; i < mask.length(); i++) {
             char currentChar = mask.charAt(i);
-            if (currentChar == charRepresentation) {
+            if (currentChar == charRepresentation || currentChar == numberRepresentation) {
                 aux[charIndex] = i;
                 maskToRaw[i] = charIndex++;
             } else {
@@ -239,7 +253,14 @@ public class MaskedEditText extends EditText implements TextWatcher {
             if (count > 0) {
                 int startingPosition = maskToRaw[nextValidPosition(start)];
                 String addedString = s.subSequence(start, start + count).toString();
-                count = rawText.addToString(clear(addedString), startingPosition, maxRawLength);
+                char filterChar = getFilterChar(startingPosition);
+
+                if (isNumeric(filterChar + "") && isLetter(addedString))
+                    return;
+                else if (isLetter(filterChar + "") && isNumeric(addedString))
+                    return;
+                else
+                    count = rawText.addToString(clear(addedString), startingPosition, maxRawLength);
                 if (initialized) {
                     int currentPosition;
                     if (startingPosition + count < rawToMask.length)
@@ -377,5 +398,39 @@ public class MaskedEditText extends EditText implements TextWatcher {
             string = string.replace(Character.toString(c), "");
         }
         return string;
+    }
+
+    private boolean isNumeric(String str) {
+        try {
+            double d = Double.parseDouble(str);
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isLetter(String name) {
+        char[] chars = name.toCharArray();
+
+        for (char c : chars) {
+            if (!Character.isLetter(c)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private char getFilterChar(int position) {
+        if (getHint() == null)
+            throw new RuntimeException("Hint must be set");
+
+        char filterChar = getHint().charAt(position);
+        while (!isLetter(filterChar + "") && !isNumeric(filterChar + "")) {
+            position = position + 1;
+            filterChar = getHint().charAt(position);
+        }
+
+        return filterChar;
     }
 }

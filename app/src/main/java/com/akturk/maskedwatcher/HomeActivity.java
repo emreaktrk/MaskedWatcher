@@ -27,8 +27,11 @@ public class HomeActivity extends ActionBarActivity {
 
         MaskedEditText maskedEditText = new MaskedEditText(this);
         maskedEditText.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        maskedEditText.setCharRepresentation('c');
-        maskedEditText.setMask("ccc.ccc.ccc-cc");
+        maskedEditText.setHint("9A9.AAA.AA-AA");
+        maskedEditText.setCharRepresentation('A');
+        maskedEditText.setNumberRepresentation('9');
+        maskedEditText.setMask("9A9.AAA.AA-AA");
+
 
         LinearLayout linearLayout = (LinearLayout) findViewById(R.id.activity_home_layout);
         linearLayout.addView(maskedEditText);
